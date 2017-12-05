@@ -1,0 +1,216 @@
+<html>
+   <head>
+      <meta charset="utf-8">
+   	<title>贪吃蛇</title>
+      <script>
+
+         mapMatrix = new Array();
+         for (var i = 0; i < 12; i++){
+            mapMatrix[i] = new Array();
+            for (var j = 0; j < 20; j++){
+               mapMatrix[i][j] = 0;
+            }
+         }
+
+         moved = 1;
+         score = 0;
+         level = 1;
+         bestScore = 0;
+         paused = 0;
+         throughWall = 1;
+         document.onkeydown=changeDirection;
+         lastDirection = 'r', curDirection = 'r';
+
+         function restart(){
+            score = 0;
+            level = 1;
+            curDirection = 'r'
+            document.getElementById("speed").innerHTML = "level:1";
+            document.getElementById("score").innerHTML = "00000";
+            for (var i = 0; i < 12; i++){
+               for (var j = 0; j < 20; j++){
+                  mapMatrix[i][j] = 0;
+               }
+            }
+            start();
+         }
+
+         function refreshMap(){
+            for (var i = 1; i <= 12; i++){
+               for (var j = 1; j <= 20; j++){
+                  if (mapMatrix[i-1][j-1] == 0){
+                     var id = 'map' + i + '_' + j;
+                     document.getElementById(id).style.backgroundColor="#c0d8d8";
+                     document.getElementById(id).style.border="#c0d8d8 solid 1px";
+                  }
+                  else if (mapMatrix[i-1][j-1] == -1){
+                     var id = 'map' + i + '_' + j;
+                     document.getElementById(id).style.backgroundColor="#d46d76";
+                  }
+                  else{
+                     var id = 'map' + i + '_' + j;
+                     document.getElementById(id).style.border="#778888 solid 1px";
+                     document.getElementById(id).style.backgroundColor="#555";
+                  }
+               }
+            }
+         }
+
+         function start(){
+            mapMatrix[5][7] = 1;
+            mapMatrix[5][8] = 2;
+            createFood();
+            refreshMap();
+            inGame = setInterval("nextMove(1)", 200 - 20*(level - 1));
+         }
+
+         function nextMove(){
+            moved = 1;
+            var maxNum = 0, maxi, maxj;
+            for (var i = 0; i < 12; i++){
+               for (var j = 0; j < 20; j++){
+                  if (mapMatrix[i][j] > 0){
+                     if(mapMatrix[i][j] > maxNum){
+                        maxNum = mapMatrix[i][j];
+                        maxi = i;
+                        maxj = j;
+                     }
+                  }
+               }
+            }
+            if (curDirection == 'l') maxj--;
+            if (curDirection == 'r') maxj++;
+            if (curDirection == 'u') maxi--;
+            if (curDirection == 'd') maxi++;
+
+            if (maxi >= 12 || maxj >= 20 || maxi < 0 || maxj < 0){
+               if (throughWall == 1){
+                  if(maxi == 12) maxi = 0;
+                  if(maxj == 20) maxj = 0;
+                  if(maxi == -1) maxi = 11;
+                  if(maxj == -1) maxj = 19;
+               }
+               else{
+                  gameOver();
+                  return;
+               }
+            }
+
+            if (mapMatrix[maxi][maxj] > 0) {gameOver();}
+            else if (mapMatrix[maxi][maxj] != -1){
+               for (var i = 0; i < 12; i++){
+                  for (var j = 0; j < 20; j++){
+                     if (mapMatrix[i][j] > 0)
+                        mapMatrix[i][j]--;
+                  }
+               }
+               mapMatrix[maxi][maxj] = maxNum;
+               refreshMap();
+            }
+            else{
+               score ++;
+               document.getElementById("score").innerHTML = (Array(4).join(0) + score).slice(-4) + "0";
+               if (score % 10 == 0 && level < 7){
+                  level ++;
+                  clearInterval(inGame);
+                  document.getElementById("speed").innerHTML = "level:" + level;
+                  inGame = setInterval("nextMove(1)", 200 - 15*(level - 1));
+               }
+               mapMatrix[maxi][maxj] = maxNum + 1;
+               createFood();
+               refreshMap();
+            }
+         }
+
+         function createFood() {
+            var i = Math.floor(Math.random()*12);
+            var j = Math.floor(Math.random()*20);
+            if (mapMatrix[i][j] != 0){
+               createFood();
+               return;
+            }
+            mapMatrix[i][j] = -1;
+         }
+
+         function changeDirection(){
+            key = event.keyCode;
+            if (moved == 1)
+            lastDirection = curDirection;
+            console.log(key);
+            if (key == 37 && lastDirection != 'r') curDirection = 'l';
+            if (key == 38 && lastDirection != 'd') curDirection = 'u';
+            if (key == 39 && lastDirection != 'l') curDirection = 'r';
+            if (key == 40 && lastDirection != 'u') curDirection = 'd';
+            if (key == 80){
+               if(paused == 0){
+                  clearInterval(inGame);
+                  document.getElementById("pause").innerHTML = "P 继续游戏";
+                  document.getElementById("pause").style.color = "#555";
+                  paused = 1;
+               }
+               else{
+                  inGame = setInterval("nextMove(1)", 200 - 20*(level - 1));
+                  document.getElementById("pause").innerHTML = "P 暂停游戏";
+                  document.getElementById("pause").style.color = "#94a7a7";
+                  paused = 0;
+               }
+            }
+            if (key == 84){
+               if(throughWall == 0){
+                  document.getElementById("throughWall").style.color = "#555";
+                  throughWall = 1;
+               }
+               else{
+                  document.getElementById("throughWall").style.color = "#94a7a7";
+                  throughWall = 0;
+               }
+            }
+            moved = 0;
+         }
+
+         function gameOver(){
+            clearInterval(inGame);
+            if (score > bestScore) bestScore = score;
+            document.getElementById("bestScore").innerHTML = "最高分:" + bestScore*10;
+            alert("分数:" + score * 10);
+            restart()
+         }
+
+         function CreatDiv(i,j){
+            var oDiv = document.createElement("div");
+            oDiv.style.border="#c0d8d8 solid 1px";
+            oDiv.style.width="48px";
+            oDiv.style.height="48px";
+            oDiv.style.backgroundColor="#555";
+            oDiv.style.float="left";
+            oDiv.id='map' + i + '_' + j;
+            document.getElementById("snake").appendChild(oDiv);
+         }
+
+         function drawMap(){
+            for (var i = 1; i <= 12; i++){
+               for (var j = 1; j <= 20; j++){
+                  CreatDiv(i,j);
+               }
+            }
+         }
+
+      </script>
+      <style>
+      </style>
+   </head>
+   <body style="background-color: #c0d8d8;">
+      <div style=" width: 1016px; margin: 0px auto;">
+
+         <div id="score" style="margin-top: 30px;font-family: Courier;font-size: 3em;font-weight: bold;letter-spacing: 0.1em;color: #555;width: 45%;float: left;">00000</div>
+         <div id="speed" style="margin-top: 30px;font-family: Courier;font-size: 3em;font-weight: bold;color: #555;width: 50%;float: right;text-align: right;">level:1</div>
+         <hr align="center" color="#555" size="8px" width="1016">
+         <div id="snake" style="height: 600px;width: 1000px;border: #555 solid 8px;text-align: center;margin-top: 30px;"></div>
+         <div style="background-color: #c0d8d8;border-radius: 0;font-size: 2em;padding: 0px 0px;font-weight: bold;color: #94a7a7;margin-top: 10px;"><label id="throughWall" style="color:#555;" >T 穿墙模式</label><label id="pause" style="margin-left:50px;">P 暂停游戏</label><label id="bestScore" style="font-family: Courier;float:right;color:#555">最高分:0</label></div>
+      </div>
+   </body>
+   <script>
+      drawMap();
+      start();
+	</script>
+</html>
